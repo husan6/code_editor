@@ -101,13 +101,17 @@ npm run build
 
 ## Screenshots
 
-Add screenshots to [`docs/screenshots/`](./docs/screenshots/README.md) and then link them here.
+### Join Room
 
-Suggested screenshots:
+![Join room screen](./docs/screenshots/join-room.png)
 
-- Join room screen
-- Main editor screen
-- Two-tab sync demo
+### Editor
+
+![Editor screen](./docs/screenshots/editor.png)
+
+### Sync Demo
+
+![Realtime sync demo](./docs/screenshots/sync-demo.png)
 
 ## Demo
 

@@ -12,12 +12,16 @@ const createStarterFile = () => ({
   code: '// Start coding...\n',
 });
 
-const getRoomIdFromUrl = () => {
+const getQueryParam = (key) => {
   if (typeof window === 'undefined') {
     return '';
   }
 
-  return new URL(window.location.href).searchParams.get('room') || '';
+  return new URL(window.location.href).searchParams.get(key) || '';
+};
+
+const getRoomIdFromUrl = () => {
+  return getQueryParam('room');
 };
 
 const getStoredFilesForRoom = (roomId) => {
@@ -93,13 +97,41 @@ const getDownloadName = (fileName = '', language = 'javascript') => {
 };
 
 const getInitialSessionState = () => {
+  const demo = getQueryParam('demo');
+  const demoPresets = {
+    editor: {
+      roomId: 'portfolio-demo',
+      username: 'Husan',
+      autoJoin: true,
+      demoCode: "function greet(name) {\n  console.log('Hello, ' + name);\n}\n\ngreet('team');\n",
+    },
+    'sync-host': {
+      roomId: 'sync-demo-room',
+      username: 'Husan',
+      autoJoin: true,
+      demoCode: "const users = ['Husan', 'Teammate'];\nconsole.log(users.join(', '));\n",
+    },
+    'sync-guest': {
+      roomId: 'sync-demo-room',
+      username: 'Teammate',
+      autoJoin: true,
+      demoCode: "const users = ['Husan', 'Teammate'];\nconsole.log(users.join(', '));\n",
+    },
+  };
+  const preset = demoPresets[demo] || null;
   const roomId = getRoomIdFromUrl();
   const storedFiles = getStoredFilesForRoom(roomId);
   const files = storedFiles || [createStarterFile()];
   const activeFile = files[0];
+  const username = preset?.username || getQueryParam('user');
+  const autoJoin = preset?.autoJoin || getQueryParam('autojoin') === '1';
+  const demoCode = preset?.demoCode || getQueryParam('demoCode');
 
   return {
-    roomId,
+    roomId: preset?.roomId || roomId,
+    username,
+    autoJoin,
+    demoCode,
     files,
     activeFileId: activeFile.id,
     language: getLanguageFromFileName(activeFile.name),
@@ -111,8 +143,10 @@ function App() {
   const [initialSession] = useState(getInitialSessionState);
 
   const [roomId, setRoomId] = useState(initialSession.roomId);
-  const [username, setUsername] = useState('');
-  const [joined, setJoined] = useState(false);
+  const [username, setUsername] = useState(initialSession.username);
+  const [joined, setJoined] = useState(
+    Boolean(initialSession.autoJoin && initialSession.roomId && initialSession.username),
+  );
   const [files, setFiles] = useState(initialSession.files);
   const [activeFileId, setActiveFileId] = useState(initialSession.activeFileId);
   const [messages, setMessages] = useState([]);
@@ -129,6 +163,7 @@ function App() {
   const socketRef = useRef(null);
   const editorRef = useRef(null);
   const markersRef = useRef({});
+  const demoCodeAppliedRef = useRef(false);
 
   const roomUrl = useMemo(
     () => (roomId ? `${window.location.origin}?room=${roomId}` : window.location.origin),
@@ -244,6 +279,14 @@ function App() {
         setFiles(roomFiles);
         setActiveFileId(roomFiles[0].id);
         setLanguage(getLanguageFromFileName(roomFiles[0].name));
+
+        if (initialSession.demoCode && !demoCodeAppliedRef.current) {
+          demoCodeAppliedRef.current = true;
+          const [firstFile, ...restFiles] = roomFiles;
+          const demoFiles = [{ ...firstFile, code: initialSession.demoCode }, ...restFiles];
+          setFiles(demoFiles);
+          socket.emit('code-change', { roomId, fileId: firstFile.id, code: initialSession.demoCode });
+        }
       }
 
       setUsers(Object.entries(roomUsers).map(([socketId, user]) => ({ socketId, ...user })));
@@ -301,7 +344,7 @@ function App() {
       socketRef.current = null;
       markersRef.current = {};
     };
-  }, [addLog, joined, roomId, username]);
+  }, [addLog, initialSession.demoCode, joined, roomId, username]);
 
   const handleCreateRoom = useCallback(() => {
     const newRoomId = uuidv4();
