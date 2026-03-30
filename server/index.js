@@ -3,6 +3,7 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
+const { Script, createContext } = require('vm');
 
 const app = express();
 app.use(cors());
@@ -12,12 +13,13 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: '*',
-    methods: ['GET', 'POST']
-  }
+    methods: ['GET', 'POST'],
+  },
 });
 
-const rooms = {}; // roomId -> {code, users: {socketId: {username, color}}, messages: []}
+const rooms = {}; // roomId -> { files, users: {socketId: {username, color}}, messages: [] }
 const socketRoom = {}; // socketId -> roomId
+const savedSessions = {}; // roomId -> { files, messages, updatedAt }
 
 io.on('connection', (socket) => {
   console.log('socket connected', socket.id);
@@ -26,7 +28,11 @@ io.on('connection', (socket) => {
     if (!roomId || !username) return;
 
     if (!rooms[roomId]) {
-      rooms[roomId] = { files: [{ id: uuidv4(), name: 'index.js', code: '// Start coding\n' }], users: {}, messages: [] };
+      rooms[roomId] = {
+        files: [{ id: uuidv4(), name: 'index.js', code: '// Start coding\n' }],
+        users: {},
+        messages: [],
+      };
     }
 
     const userColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
@@ -36,31 +42,37 @@ io.on('connection', (socket) => {
 
     const room = rooms[roomId];
     socket.emit('room-data', { files: room.files, users: room.users, messages: room.messages });
-
     socket.to(roomId).emit('user-joined', { socketId: socket.id, username, color: userColor });
-
-    io.in(roomId).emit('active-users', Object.entries(room.users).map(([sid, u]) => ({ socketId: sid, ...u })));
+    io.in(roomId).emit(
+      'active-users',
+      Object.entries(room.users).map(([sid, user]) => ({ socketId: sid, ...user })),
+    );
   });
 
   socket.on('code-change', ({ roomId, fileId, code }) => {
     if (!roomId || !fileId || typeof code !== 'string') return;
+
     const room = rooms[roomId];
     if (!room) return;
-    const file = room.files.find((f) => f.id === fileId);
+
+    const file = room.files.find((entry) => entry.id === fileId);
     if (!file) return;
+
     file.code = code;
     socket.to(roomId).emit('code-change', { fileId, code });
   });
 
   socket.on('cursor-change', ({ roomId, socketId, range }) => {
-    if (!roomId || !range) return;
+    if (!roomId || !range || !rooms[roomId] || !rooms[roomId].users[socket.id]) return;
     socket.to(roomId).emit('cursor-change', { socketId, range, ...rooms[roomId].users[socket.id] });
   });
 
   socket.on('chat-message', ({ roomId, username, message }) => {
     if (!roomId || !message) return;
+
     const room = rooms[roomId];
     if (!room) return;
+
     const chat = { username, message, createdAt: new Date().toISOString() };
     room.messages.push(chat);
     io.in(roomId).emit('chat-message', chat);
@@ -71,28 +83,26 @@ io.on('connection', (socket) => {
     if (!roomId) return;
 
     const room = rooms[roomId];
-    if (room) {
-      const user = room.users[socket.id];
-      delete room.users[socket.id];
-      delete socketRoom[socket.id];
-      socket.to(roomId).emit('user-left', { socketId: socket.id, username: user?.username });
-      io.in(roomId).emit('active-users', Object.entries(room.users).map(([sid, u]) => ({ socketId: sid, ...u })));
+    if (!room) return;
 
-      if (Object.keys(room.users).length === 0) {
-        // optional cleanup
-        setTimeout(() => {
-          if (rooms[roomId] && Object.keys(rooms[roomId].users).length === 0) {
-            delete rooms[roomId];
-          }
-        }, 1000 * 60 * 10);
-      }
+    const user = room.users[socket.id];
+    delete room.users[socket.id];
+    delete socketRoom[socket.id];
+    socket.to(roomId).emit('user-left', { socketId: socket.id, username: user?.username });
+    io.in(roomId).emit(
+      'active-users',
+      Object.entries(room.users).map(([sid, activeUser]) => ({ socketId: sid, ...activeUser })),
+    );
+
+    if (Object.keys(room.users).length === 0) {
+      setTimeout(() => {
+        if (rooms[roomId] && Object.keys(rooms[roomId].users).length === 0) {
+          delete rooms[roomId];
+        }
+      }, 1000 * 60 * 10);
     }
   });
 });
-
-const { Script, createContext } = require('vm');
-
-const savedSessions = {}; // roomId -> { files, messages, updatedAt }
 
 app.post('/run', (req, res) => {
   const { code } = req.body;
@@ -101,26 +111,25 @@ app.post('/run', (req, res) => {
   }
 
   const sandbox = {
-    __userCode: code,
     console: {
       output: [],
-      log: (...args) => sandbox.console.output.push(args.map((a) => String(a)).join(' ')),
-      info: (...args) => sandbox.console.output.push(args.map((a) => String(a)).join(' ')),
-      warn: (...args) => sandbox.console.output.push(args.map((a) => String(a)).join(' ')),
-      error: (...args) => sandbox.console.output.push(args.map((a) => String(a)).join(' '))
+      log: (...args) => sandbox.console.output.push(args.map((value) => String(value)).join(' ')),
+      info: (...args) => sandbox.console.output.push(args.map((value) => String(value)).join(' ')),
+      warn: (...args) => sandbox.console.output.push(args.map((value) => String(value)).join(' ')),
+      error: (...args) => sandbox.console.output.push(args.map((value) => String(value)).join(' ')),
     },
     document: {
       body: {
         innerHTML: '',
         innerText: '',
         appendChild: () => null,
-        insertAdjacentHTML: () => null
+        insertAdjacentHTML: () => null,
       },
       querySelector: () => null,
-      getElementById: () => null
+      getElementById: () => null,
     },
     window: {},
-    location: { href: '' }
+    location: { href: '' },
   };
   const context = createContext(sandbox);
 
@@ -128,7 +137,10 @@ app.post('/run', (req, res) => {
     const result = new Script(code).runInContext(context, { timeout: 1000 });
     return res.json({ output: sandbox.console.output || [], result });
   } catch (err) {
-    return res.json({ output: sandbox.console.output || [], error: err && err.message ? err.message : String(err) });
+    return res.json({
+      output: sandbox.console.output || [],
+      error: err && err.message ? err.message : String(err),
+    });
   }
 });
 
@@ -137,6 +149,7 @@ app.post('/save-session', (req, res) => {
   if (!roomId || !Array.isArray(files) || files.length === 0) {
     return res.status(400).json({ error: 'roomId and files are required' });
   }
+
   savedSessions[roomId] = { files, messages: messages || [], updatedAt: new Date().toISOString() };
   return res.json({ status: 'ok', saved: savedSessions[roomId] });
 });
@@ -156,7 +169,7 @@ app.get('/stats', (req, res) => {
   return res.json({
     activeRooms: Object.keys(rooms).length,
     activeUsers: Object.values(rooms).reduce((sum, room) => sum + Object.keys(room.users).length, 0),
-    savedSessions: Object.keys(savedSessions).length
+    savedSessions: Object.keys(savedSessions).length,
   });
 });
 

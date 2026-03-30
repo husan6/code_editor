@@ -1,15 +1,19 @@
 {
-  "name": "code_editor",
+  "name": "server",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "description": "Backend for the realtime collaborative code editor",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "client": "cd client && npm run dev",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "node --test server.test.js"
   },
-  "keywords": [],
+  "keywords": [
+    "express",
+    "socket.io",
+    "collaboration",
+    "editor"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

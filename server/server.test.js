@@ -47,7 +47,7 @@ async function requestJson(path, options) {
 }
 
 test('backend smoke test covers health, stats, code execution, and session persistence', async () => {
-  const child = spawn(process.execPath, ['server.js'], {
+  const child = spawn(process.execPath, ['index.js'], {
     cwd: __dirname,
     env: { ...process.env, PORT: String(PORT) },
     stdio: ['ignore', 'pipe', 'pipe'],
