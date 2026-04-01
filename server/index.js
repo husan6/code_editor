@@ -10,8 +10,22 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const isAllowedOrigin = (origin = '') => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (/^https?:\/\/localhost(?::\d+)?$/i.test(origin)) return true;
+  if (/^https:\/\/.*\.vercel\.app$/i.test(origin)) return true;
+  return false;
+};
+
 const corsOptions = {
-  origin: allowedOrigins.length > 0 ? allowedOrigins : '*',
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   methods: ['GET', 'POST'],
 };
 
@@ -182,6 +196,10 @@ app.get('/stats', (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({ status: 'OK', message: 'Realtime collaborative code editor backend is running' });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is running' });
 });
 
 const PORT = process.env.PORT || 4000;

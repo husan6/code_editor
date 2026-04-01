@@ -104,6 +104,7 @@ The frontend runs on `http://localhost:5173`.
 5. Environment variable: `CLIENT_ORIGIN=https://your-app.vercel.app`
 
 The included [`render.yaml`](./render.yaml) can help bootstrap the backend service configuration.
+After deployment, verify `https://your-render-service.onrender.com/health` returns a JSON health response.
 
 ## Testing
 
@@ -144,7 +145,8 @@ npm run build
 
 ## Demo
 
-- Live Demo: `https://your-app.vercel.app`
+- Live Demo: `https://code-editor-2kz5h1y4d-husan6s-projects.vercel.app`
+- Backend API: `https://code-editor-fg9e.onrender.com`
 - Demo Video / GIF: add a short Loom, LinkedIn post, or GIF here
 - Local demo: `http://localhost:5173`
 

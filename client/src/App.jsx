@@ -4,7 +4,9 @@ import Editor from '@monaco-editor/react';
 import { v4 as uuidv4 } from 'uuid';
 import './App.css';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+const DEFAULT_PROD_BACKEND_URL = 'https://code-editor-fg9e.onrender.com';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
+  || (import.meta.env.PROD ? DEFAULT_PROD_BACKEND_URL : 'http://localhost:4000');
 
 const createStarterFile = () => ({
   id: uuidv4(),
