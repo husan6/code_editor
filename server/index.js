@@ -5,16 +5,23 @@ const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
 const { Script, createContext } = require('vm');
 
+const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: allowedOrigins.length > 0 ? allowedOrigins : '*',
+  methods: ['GET', 'POST'],
+};
+
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-  },
+  cors: corsOptions,
 });
 
 const rooms = {}; // roomId -> { files, users: {socketId: {username, color}}, messages: [] }

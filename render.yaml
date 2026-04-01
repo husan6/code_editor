@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: code-editor-server
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: CLIENT_ORIGIN
+        value: https://your-app.vercel.app
