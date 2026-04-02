@@ -2,6 +2,29 @@
 
 Realtime collaborative code editor with shared rooms, live syncing, Socket.io-powered collaboration, and in-browser code execution.
 
+## 🚀 Live Demo
+
+https://code-editor-2kz5h1y4d-husan6s-projects.vercel.app
+
+## 🎥 Demo Video
+
+(Add Loom / screen recording link here)
+
+## ✨ Highlights
+
+- Real-time collaborative editing using Socket.io
+- Multi-user room system with live presence tracking
+- Integrated Monaco Editor (VS Code-like experience)
+- Built-in code execution with error handling
+- Full-stack deployment (Vercel + Render)
+
+## 🏗️ Architecture
+
+- Frontend (React + Vite) connects to backend via WebSockets
+- Backend (Node.js + Socket.io) manages rooms and events
+- Code changes are emitted and broadcast to all users in the same room
+- State synchronization handled in real-time across clients
+
 ## Features
 
 - Create and join collaborative rooms
@@ -78,7 +101,7 @@ npm run dev
 
 The frontend runs on `http://localhost:5173`.
 
-## Architecture
+## Architecture Details
 
 - The React client connects to the Node.js backend through Socket.io for room join, code updates, cursor sharing, and chat events.
 - The Express server keeps each room in memory with its files, connected users, and chat messages.
