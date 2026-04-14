@@ -1,7 +1,8 @@
 {
-  "name": "client",
+  "name": "velora-client",
   "private": true,
   "version": "0.0.0",
+  "description": "Frontend client for the Velora collaborative code editor.",
   "type": "module",
   "scripts": {
     "dev": "vite",

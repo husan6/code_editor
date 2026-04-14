@@ -1,0 +1,73 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="214" y1="64" x2="1030" y2="590" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12233C"/>
+      <stop offset="0.55" stop-color="#0A1424"/>
+      <stop offset="1" stop-color="#07111D"/>
+    </linearGradient>
+    <radialGradient id="glowTop" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(328 92) rotate(52.5952) scale(473.297 503.076)">
+      <stop stop-color="#4AB0FF" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#4AB0FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowBottom" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(984 524) rotate(-148.849) scale(434.38 389.968)">
+      <stop stop-color="#7BD4FF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#7BD4FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stroke" x1="198" y1="82" x2="1079" y2="594" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#87CCFF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#87CCFF" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="veloraMark" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#EDF8FF"/>
+      <stop offset="1" stop-color="#79BDFF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="640" rx="40" fill="#040A13"/>
+  <rect x="32" y="32" width="1216" height="576" rx="32" fill="url(#bg)"/>
+  <rect x="32.75" y="32.75" width="1214.5" height="574.5" rx="31.25" stroke="url(#stroke)" stroke-width="1.5"/>
+  <ellipse cx="334" cy="98" rx="394" ry="234" fill="url(#glowTop)"/>
+  <ellipse cx="1040" cy="542" rx="333" ry="206" fill="url(#glowBottom)"/>
+
+  <g opacity="0.45">
+    <path d="M860 168H1122" stroke="#7DBFFF" stroke-opacity="0.14"/>
+    <path d="M860 210H1184" stroke="#7DBFFF" stroke-opacity="0.14"/>
+    <path d="M860 252H1136" stroke="#7DBFFF" stroke-opacity="0.14"/>
+    <path d="M860 294H1170" stroke="#7DBFFF" stroke-opacity="0.14"/>
+    <path d="M860 336H1104" stroke="#7DBFFF" stroke-opacity="0.14"/>
+    <path d="M860 378H1158" stroke="#7DBFFF" stroke-opacity="0.14"/>
+    <path d="M860 420H1066" stroke="#7DBFFF" stroke-opacity="0.14"/>
+  </g>
+
+  <g opacity="0.7">
+    <rect x="796" y="136" width="324" height="192" rx="28" fill="#0D1828" stroke="#8BCBFF" stroke-opacity="0.12"/>
+    <rect x="820" y="168" width="114" height="18" rx="9" fill="#142337"/>
+    <rect x="820" y="214" width="208" height="14" rx="7" fill="#112033"/>
+    <rect x="820" y="246" width="164" height="14" rx="7" fill="#112033"/>
+    <rect x="820" y="278" width="236" height="14" rx="7" fill="#112033"/>
+    <rect x="948" y="168" width="148" height="18" rx="9" fill="#153357"/>
+    <circle cx="1090" cy="168" r="8" fill="#83C8FF"/>
+  </g>
+
+  <g opacity="0.86">
+    <rect x="844" y="366" width="252" height="126" rx="24" fill="#0E1828" stroke="#8BCBFF" stroke-opacity="0.12"/>
+    <rect x="870" y="394" width="78" height="14" rx="7" fill="#153357"/>
+    <rect x="870" y="426" width="174" height="12" rx="6" fill="#112033"/>
+    <rect x="870" y="454" width="148" height="12" rx="6" fill="#112033"/>
+  </g>
+
+  <g>
+    <rect x="118" y="118" width="88" height="88" rx="28" fill="#0E182A" stroke="#8BCBFF" stroke-opacity="0.22"/>
+    <circle cx="162" cy="144" r="20" fill="#75C8FF" fill-opacity="0.18"/>
+    <circle cx="162" cy="150" r="8" fill="#F1FBFF"/>
+    <path d="M138 158L159.5 210" stroke="url(#veloraMark)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M186 158L164.5 210" stroke="url(#veloraMark)" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <text x="118" y="292" fill="#7DBFFF" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="0.18em">VELORA</text>
+  <text x="118" y="390" fill="#EDF6FF" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800">Realtime Code</text>
+  <text x="118" y="470" fill="#EDF6FF" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800">Collaboration</text>
+  <text x="118" y="540" fill="#95A9C8" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="500">
+    Shared rooms, synced editing, chat, execution, and polished dark UI.
+  </text>
+</svg>

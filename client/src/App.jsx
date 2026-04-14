@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
 import Editor from '@monaco-editor/react';
+import { io } from 'socket.io-client';
 import { v4 as uuidv4 } from 'uuid';
 import './App.css';
 
 const DEFAULT_PROD_BACKEND_URL = 'https://code-editor-fg9e.onrender.com';
+const APP_NAME = 'Velora';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
   || (import.meta.env.PROD ? DEFAULT_PROD_BACKEND_URL : 'http://localhost:4000');
 
@@ -22,9 +23,7 @@ const getQueryParam = (key) => {
   return new URL(window.location.href).searchParams.get(key) || '';
 };
 
-const getRoomIdFromUrl = () => {
-  return getQueryParam('room');
-};
+const getRoomIdFromUrl = () => getQueryParam('room');
 
 const getStoredFilesForRoom = (roomId) => {
   if (typeof window === 'undefined' || !roomId) {
@@ -120,6 +119,7 @@ const getInitialSessionState = () => {
       demoCode: "const users = ['Husan', 'Teammate'];\nconsole.log(users.join(', '));\n",
     },
   };
+
   const preset = demoPresets[demo] || null;
   const roomId = getRoomIdFromUrl();
   const storedFiles = getStoredFilesForRoom(roomId);
@@ -141,9 +141,22 @@ const getInitialSessionState = () => {
   };
 };
 
+function BrandBadge() {
+  return (
+    <div className="brand-badge" aria-label={`${APP_NAME} logo`}>
+      <span className="brand-mark" aria-hidden="true">
+        <span className="brand-mark-glow"></span>
+        <span className="brand-mark-stem brand-mark-stem-left"></span>
+        <span className="brand-mark-stem brand-mark-stem-right"></span>
+        <span className="brand-mark-dot"></span>
+      </span>
+      <span className="eyebrow">{APP_NAME}</span>
+    </div>
+  );
+}
+
 function App() {
   const [initialSession] = useState(getInitialSessionState);
-
   const [roomId, setRoomId] = useState(initialSession.roomId);
   const [username, setUsername] = useState(initialSession.username);
   const [joined, setJoined] = useState(
@@ -167,33 +180,51 @@ function App() {
   const markersRef = useRef({});
   const demoCodeAppliedRef = useRef(false);
 
-  const roomUrl = useMemo(
-    () => (roomId ? `${window.location.origin}?room=${roomId}` : window.location.origin),
-    [roomId],
-  );
+  const roomUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return roomId ? `?room=${roomId}` : '';
+    }
+
+    const inviteUrl = new URL(window.location.href);
+    if (roomId) {
+      inviteUrl.searchParams.set('room', roomId);
+    } else {
+      inviteUrl.searchParams.delete('room');
+    }
+
+    inviteUrl.searchParams.delete('demo');
+    inviteUrl.searchParams.delete('user');
+    inviteUrl.searchParams.delete('autojoin');
+    inviteUrl.searchParams.delete('demoCode');
+    return inviteUrl.toString();
+  }, [roomId]);
+
   const activeFile = files.find((file) => file.id === activeFileId) || files[0];
+  const isDarkTheme = theme === 'vs-dark';
+  const statusTone = status === 'Connected'
+    ? 'green'
+    : status === 'Connection error'
+      ? 'red'
+      : 'neutral';
 
   const addLog = useCallback((entry) => {
     setLogs((prev) => [...prev, `${new Date().toLocaleTimeString()} - ${entry}`]);
   }, []);
 
-  const restoreFilesFromStorage = useCallback(
-    (targetRoomId) => {
-      const storedFiles = getStoredFilesForRoom(targetRoomId);
-      if (!storedFiles) {
-        setLoadedSession(false);
-        return false;
-      }
+  const restoreFilesFromStorage = useCallback((targetRoomId) => {
+    const storedFiles = getStoredFilesForRoom(targetRoomId);
+    if (!storedFiles) {
+      setLoadedSession(false);
+      return false;
+    }
 
-      setFiles(storedFiles);
-      setActiveFileId(storedFiles[0].id);
-      setLanguage(getLanguageFromFileName(storedFiles[0].name));
-      setLoadedSession(true);
-      addLog('Restored files from localStorage');
-      return true;
-    },
-    [addLog],
-  );
+    setFiles(storedFiles);
+    setActiveFileId(storedFiles[0].id);
+    setLanguage(getLanguageFromFileName(storedFiles[0].name));
+    setLoadedSession(true);
+    addLog('Restored files from localStorage');
+    return true;
+  }, [addLog]);
 
   const copyRoomLink = useCallback(async () => {
     if (!roomId) {
@@ -211,13 +242,13 @@ function App() {
   }, [addLog, roomId, roomUrl]);
 
   useEffect(() => {
-    document.body.classList.toggle('light', theme === 'light');
-    document.body.classList.toggle('dark', theme === 'vs-dark');
+    document.body.classList.toggle('light', !isDarkTheme);
+    document.body.classList.toggle('dark', isDarkTheme);
 
     return () => {
       document.body.classList.remove('light', 'dark');
     };
-  }, [theme]);
+  }, [isDarkTheme]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -382,22 +413,19 @@ function App() {
     setJoined(true);
   }, [addLog, restoreFilesFromStorage, roomId, username]);
 
-  const onCodeChange = useCallback(
-    (value) => {
-      const nextCode = value ?? '';
+  const onCodeChange = useCallback((value) => {
+    const nextCode = value ?? '';
 
-      setFiles((prev) =>
-        prev.map((file) => (file.id === activeFileId ? { ...file, code: nextCode } : file)),
-      );
+    setFiles((prev) =>
+      prev.map((file) => (file.id === activeFileId ? { ...file, code: nextCode } : file)),
+    );
 
-      if (!socketRef.current || !roomId || !activeFileId) {
-        return;
-      }
+    if (!socketRef.current || !roomId || !activeFileId) {
+      return;
+    }
 
-      socketRef.current.emit('code-change', { roomId, fileId: activeFileId, code: nextCode });
-    },
-    [activeFileId, roomId],
-  );
+    socketRef.current.emit('code-change', { roomId, fileId: activeFileId, code: nextCode });
+  }, [activeFileId, roomId]);
 
   const handleSendMessage = useCallback(() => {
     const trimmedMessage = messageText.trim();
@@ -551,27 +579,24 @@ function App() {
     return () => window.removeEventListener('keydown', onKeydown);
   }, [addLog, copyRoomLink, downloadCode, loadSavedSession, runCode, saveSession]);
 
-  const uploadCode = useCallback(
-    (event) => {
-      const [fileData] = event.target.files || [];
-      if (!fileData) {
-        return;
-      }
+  const uploadCode = useCallback((event) => {
+    const [fileData] = event.target.files || [];
+    if (!fileData) {
+      return;
+    }
 
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        const code = typeof loadEvent.target?.result === 'string' ? loadEvent.target.result : '';
-        const newFile = { id: uuidv4(), name: fileData.name, code };
-        setFiles((prev) => [...prev, newFile]);
-        setActiveFileId(newFile.id);
-        setLanguage(getLanguageFromFileName(newFile.name));
-        addLog(`Loaded file ${fileData.name}`);
-      };
-      reader.readAsText(fileData);
-      event.target.value = '';
-    },
-    [addLog],
-  );
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const code = typeof loadEvent.target?.result === 'string' ? loadEvent.target.result : '';
+      const newFile = { id: uuidv4(), name: fileData.name, code };
+      setFiles((prev) => [...prev, newFile]);
+      setActiveFileId(newFile.id);
+      setLanguage(getLanguageFromFileName(newFile.name));
+      addLog(`Loaded file ${fileData.name}`);
+    };
+    reader.readAsText(fileData);
+    event.target.value = '';
+  }, [addLog]);
 
   const handleAddFile = useCallback(() => {
     const extensionMap = {
@@ -593,33 +618,27 @@ function App() {
     addLog(`Created new file ${newFile.name}`);
   }, [addLog, files.length, language]);
 
-  const handleRemoveFile = useCallback(
-    (id) => {
-      if (files.length === 1) {
-        addLog('Cannot delete the last file');
-        return;
-      }
+  const handleRemoveFile = useCallback((id) => {
+    if (files.length === 1) {
+      addLog('Cannot delete the last file');
+      return;
+    }
 
-      const remainingFiles = files.filter((file) => file.id !== id);
-      setFiles(remainingFiles);
+    const remainingFiles = files.filter((file) => file.id !== id);
+    setFiles(remainingFiles);
 
-      if (activeFileId === id && remainingFiles[0]) {
-        setActiveFileId(remainingFiles[0].id);
-        setLanguage(getLanguageFromFileName(remainingFiles[0].name));
-      }
+    if (activeFileId === id && remainingFiles[0]) {
+      setActiveFileId(remainingFiles[0].id);
+      setLanguage(getLanguageFromFileName(remainingFiles[0].name));
+    }
 
-      addLog('Removed file');
-    },
-    [activeFileId, addLog, files],
-  );
+    addLog('Removed file');
+  }, [activeFileId, addLog, files]);
 
-  const handleFileTabClick = useCallback(
-    (file) => {
-      setActiveFileId(file.id);
-      setLanguage(getLanguageFromFileName(file.name));
-    },
-    [],
-  );
+  const handleFileTabClick = useCallback((file) => {
+    setActiveFileId(file.id);
+    setLanguage(getLanguageFromFileName(file.name));
+  }, []);
 
   const handleEditorMount = useCallback((editor) => {
     editorRef.current = editor;
@@ -648,148 +667,316 @@ function App() {
     return (
       <div className="page-shell">
         <div className="join-page">
-          <h1>Realtime Collaborative Code Editor</h1>
-          <div className="join-controls">
-            <button onClick={handleCreateRoom}>Create Room</button>
-            <input value={roomId} onChange={(event) => setRoomId(event.target.value)} placeholder="Room ID" />
-            <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Your name" />
-            <button onClick={handleJoinRoom}>Join Room</button>
+          <div className="join-hero">
+            <div className="join-hero-copy">
+              <BrandBadge />
+              <h1>Code together in a clean, focused workspace.</h1>
+            </div>
+            <p className="hero-copy">
+              {APP_NAME} helps you start a room, share the invite link, and collaborate with live sync,
+              chat, file tabs, and in-browser execution from one polished dark UI.
+            </p>
           </div>
-          <p>Room Link: {roomId ? <code>{roomUrl}</code> : <i>Create or paste an existing room ID</i>}</p>
-          <div className="shortcut-hint">Shortcuts: Ctrl+R Run | Ctrl+S Save | Ctrl+L Load | Ctrl+D Download | Ctrl+K Copy room link</div>
-          <div className="log-area">{logs.map((line, index) => <div key={index}>{line}</div>)}</div>
+
+          <div className="join-grid">
+            <section className="panel join-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Start a session</h2>
+                  <p>Use a fresh room or reconnect to an existing one.</p>
+                </div>
+                <span className={`status-pill ${statusTone}`}>{status}</span>
+              </div>
+
+              <div className="join-fields">
+                <input
+                  className="field-input"
+                  value={roomId}
+                  onChange={(event) => setRoomId(event.target.value)}
+                  placeholder="Room ID"
+                />
+                <input
+                  className="field-input"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder="Your name"
+                />
+              </div>
+
+              <div className="button-row">
+                <button type="button" className="button button-primary" onClick={handleCreateRoom}>
+                  Create Room
+                </button>
+                <button type="button" className="button button-secondary" onClick={handleJoinRoom}>
+                  Join Room
+                </button>
+              </div>
+
+              <div className="room-link-card">
+                <span className="room-link-label">Invite link</span>
+                {roomId ? <code>{roomUrl}</code> : <p>Create or paste a room ID to generate a shareable link.</p>}
+              </div>
+
+              <div className="shortcut-hint">
+                Shortcuts: Ctrl+R Run, Ctrl+S Save, Ctrl+L Load, Ctrl+D Download, Ctrl+K Copy link
+              </div>
+            </section>
+
+            <section className="panel info-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Workspace snapshot</h2>
+                  <p>Useful signals before you jump in.</p>
+                </div>
+              </div>
+
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <strong>{roomStats.activeRooms}</strong>
+                  <span>Active rooms</span>
+                </div>
+                <div className="stat-card">
+                  <strong>{roomStats.activeUsers}</strong>
+                  <span>Active users</span>
+                </div>
+                <div className="stat-card">
+                  <strong>{roomStats.savedSessions}</strong>
+                  <span>Saved sessions</span>
+                </div>
+              </div>
+
+              <div className="feature-mini-grid">
+                <div className="feature-mini-card">Monaco editor with shared file tabs</div>
+                <div className="feature-mini-card">Live chat and presence updates</div>
+                <div className="feature-mini-card">Quick save, load, upload, and download tools</div>
+              </div>
+
+              <div className="log-area">
+                {logs.length > 0 ? logs.map((line, index) => <div key={index}>{line}</div>) : 'Activity will appear here.'}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`app ${theme === 'vs-dark' ? 'dark' : 'light'}`}>
-      <header>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>Room: {roomId}</div>
-          <div className="room-stats">
-            Active Rooms: {roomStats.activeRooms} | Active Users: {roomStats.activeUsers} | Saved Sessions: {roomStats.savedSessions}
-          </div>
+    <div className={`app ${isDarkTheme ? 'dark' : 'light'}`}>
+      <header className="app-header panel">
+        <div className="header-copy">
+          <BrandBadge />
+          <h2 className="app-title">Room {roomId}</h2>
+          <p className="header-subtitle">Share the invite link and keep every collaborator on the same code state.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className={`status-pill ${status === 'Connected' ? 'green' : 'red'}`}>{status}</span>
+
+        <div className="header-meta">
+          <div className="meta-chip-row">
+            <span className="meta-chip">Rooms {roomStats.activeRooms}</span>
+            <span className="meta-chip">Users {roomStats.activeUsers}</span>
+            <span className="meta-chip">Saved {roomStats.savedSessions}</span>
+          </div>
+          <span className={`status-pill ${statusTone}`}>{status}</span>
         </div>
       </header>
 
-      <div className="file-tabs">
-        {files.map((file) => (
-          <div key={file.id} className={`tab-item ${file.id === activeFileId ? 'active' : ''}`} onClick={() => handleFileTabClick(file)}>
-            {file.name}
-            <button className="tab-close" onClick={(event) => { event.stopPropagation(); handleRemoveFile(file.id); }}>
-              x
-            </button>
-          </div>
-        ))}
-        <button className="add-file" onClick={handleAddFile}>+ New File</button>
-      </div>
+      <section className="toolbar panel">
+        <div className="toolbar-group">
+          <label className="field-label">
+            <span>Language</span>
+            <select className="field-select" value={language} onChange={(event) => setLanguage(event.target.value)}>
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="python">Python (preview)</option>
+              <option value="json">JSON</option>
+            </select>
+          </label>
 
-      <p className="temporary-hint">Active file: {activeFile?.name} | Language: {language}</p>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => setTheme((currentTheme) => (currentTheme === 'vs-dark' ? 'light' : 'vs-dark'))}
+          >
+            {isDarkTheme ? 'Light Mode' : 'Dark Mode'}
+          </button>
+        </div>
 
-      <div className="actions">
-        <select value={language} onChange={(event) => setLanguage(event.target.value)}>
-          <option value="javascript">JavaScript</option>
-          <option value="typescript">TypeScript</option>
-          <option value="python">Python (preview)</option>
-          <option value="json">JSON</option>
-        </select>
-        <button onClick={() => setTheme((currentTheme) => (currentTheme === 'vs-dark' ? 'light' : 'vs-dark'))}>
-          {theme === 'vs-dark' ? 'Light Mode' : 'Dark Mode'}
-        </button>
-        <button onClick={() => void copyRoomLink()}>Copy Room Link</button>
-        <button onClick={() => void runCode()}>Run Code</button>
-        <button onClick={() => void saveSession()}>Save Session</button>
-        <button onClick={() => void loadSavedSession()}>Load Session</button>
-        <button onClick={downloadCode}>Download</button>
-        <label className="upload-button">
-          Upload
-          <input type="file" accept=".js,.jsx,.ts,.tsx,.py,.json,.txt" onChange={uploadCode} hidden />
-        </label>
-      </div>
+        <div className="toolbar-group">
+          <button type="button" className="button button-primary" onClick={() => void copyRoomLink()}>
+            Copy Room Link
+          </button>
+          <button type="button" className="button button-secondary" onClick={() => void runCode()}>
+            Run Code
+          </button>
+          <button type="button" className="button button-ghost" onClick={() => void saveSession()}>
+            Save Session
+          </button>
+          <button type="button" className="button button-ghost" onClick={() => void loadSavedSession()}>
+            Load Session
+          </button>
+          <button type="button" className="button button-ghost" onClick={downloadCode}>
+            Download
+          </button>
+          <label className="button button-ghost upload-button">
+            Upload
+            <input type="file" accept=".js,.jsx,.ts,.tsx,.py,.json,.txt" onChange={uploadCode} hidden />
+          </label>
+        </div>
+      </section>
+
+      <section className="workspace-meta">
+        <div className="hint-card">
+          <span className="hint-label">Active file</span>
+          <strong>{activeFile?.name || 'No file selected'}</strong>
+        </div>
+        <div className="hint-card">
+          <span className="hint-label">Invite link</span>
+          <code>{roomUrl}</code>
+        </div>
+      </section>
 
       <div className="main-grid">
-        <section className="editor-pane">
-          <Editor
-            height="80vh"
-            theme={theme}
-            language={language}
-            value={activeFile?.code || ''}
-            onChange={onCodeChange}
-            onMount={handleEditorMount}
-            options={{
-              minimap: { enabled: true },
-              fontSize: 14,
-              tabSize: 2,
-              renderWhitespace: 'all',
-              automaticLayout: true,
-              formatOnType: true,
-              formatOnPaste: true,
-              codeLens: true,
-              lineNumbers: 'on',
-              scrollBeyondLastLine: false,
-              rulers: [80, 120],
-            }}
-          />
+        <section className="editor-pane panel">
+          <div className="pane-header">
+            <div>
+              <h3>Editor</h3>
+              <p>Shared tabs, synced changes, and room-aware shortcuts.</p>
+            </div>
+            <button type="button" className="button button-ghost" onClick={handleAddFile}>
+              + New File
+            </button>
+          </div>
+
+          <div className="file-tabs">
+            {files.map((file) => (
+              <div key={file.id} className={`tab-item ${file.id === activeFileId ? 'active' : ''}`}>
+                <button type="button" className="tab-button" onClick={() => handleFileTabClick(file)}>
+                  {file.name}
+                </button>
+                <button
+                  type="button"
+                  className="tab-close"
+                  aria-label={`Remove ${file.name}`}
+                  onClick={() => handleRemoveFile(file.id)}
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="editor-frame">
+            <Editor
+              height="68vh"
+              theme={theme}
+              language={language}
+              value={activeFile?.code || ''}
+              onChange={onCodeChange}
+              onMount={handleEditorMount}
+              options={{
+                minimap: { enabled: true },
+                fontSize: 14,
+                tabSize: 2,
+                renderWhitespace: 'all',
+                automaticLayout: true,
+                formatOnType: true,
+                formatOnPaste: true,
+                codeLens: true,
+                lineNumbers: 'on',
+                scrollBeyondLastLine: false,
+                rulers: [80, 120],
+              }}
+            />
+          </div>
         </section>
 
         <aside className="sidebar">
-          <div className="sidebar-section">
-            <h3>Users</h3>
-            <ul>
-              {users.map((user) => (
-                <li key={user.socketId}>
-                  <span className="user-badge" style={{ backgroundColor: user.color }}></span>
-                  {user.username}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="sidebar-section">
-            <h3>Chat</h3>
-            <div className="chat-log">
-              {messages.map((message, index) => (
-                <div key={index}>
-                  <strong>{message.username}:</strong> {message.message}
-                </div>
-              ))}
+          <section className="panel sidebar-section">
+            <div className="pane-header compact">
+              <div>
+                <h3>Users</h3>
+                <p>Who is currently in the room.</p>
+              </div>
             </div>
+
+            <ul className="user-list">
+              {users.length > 0 ? (
+                users.map((user) => (
+                  <li key={user.socketId}>
+                    <span className="user-badge" style={{ backgroundColor: user.color }}></span>
+                    <span>{user.username}</span>
+                  </li>
+                ))
+              ) : (
+                <li className="empty-state">No collaborators yet.</li>
+              )}
+            </ul>
+          </section>
+
+          <section className="panel sidebar-section">
+            <div className="pane-header compact">
+              <div>
+                <h3>Chat</h3>
+                <p>Keep the room coordinated without leaving the editor.</p>
+              </div>
+            </div>
+
+            <div className="chat-log">
+              {messages.length > 0 ? (
+                messages.map((message, index) => (
+                  <div key={index} className="chat-message">
+                    <strong>{message.username}:</strong> {message.message}
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">No messages yet.</div>
+              )}
+            </div>
+
             <div className="chat-input">
               <input
+                className="field-input"
                 value={messageText}
                 onChange={(event) => setMessageText(event.target.value)}
-                placeholder="Message..."
+                placeholder="Message the room..."
                 onKeyDown={(event) => event.key === 'Enter' && handleSendMessage()}
               />
-              <button onClick={handleSendMessage}>Send</button>
+              <button type="button" className="button button-primary" onClick={handleSendMessage}>
+                Send
+              </button>
             </div>
-          </div>
+          </section>
         </aside>
       </div>
 
-      <section className="result-pane">
-        <h3>Execution Output</h3>
+      <section className="result-pane panel">
+        <div className="pane-header compact">
+          <div>
+            <h3>Execution Output</h3>
+            <p>Run JavaScript or TypeScript snippets and inspect the result below.</p>
+          </div>
+        </div>
+
         <div className="output-box">
           {runOutput ? (
             runOutput.error ? (
-              <div style={{ color: 'tomato' }}>Error: {runOutput.error}</div>
+              <div className="output-error">Error: {runOutput.error}</div>
             ) : (
-              <div>
+              <div className="output-result">
                 <div><strong>Result:</strong> {String(runOutput.result)}</div>
                 <div><strong>Logs:</strong></div>
                 <pre>{(runOutput.output || []).join('\n')}</pre>
               </div>
             )
           ) : (
-            <div>No output yet</div>
+            <div className="empty-state">No output yet.</div>
           )}
         </div>
-        <div className="save-status">{saveStatus}</div>
-        {loadedSession && <div className="loaded-note">Loaded saved session data</div>}
+
+        <div className="result-notes">
+          {saveStatus ? <div className="save-status">{saveStatus}</div> : null}
+          {loadedSession ? <div className="loaded-note">Loaded saved session data</div> : null}
+        </div>
       </section>
     </div>
   );

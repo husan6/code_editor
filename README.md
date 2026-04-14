@@ -1,43 +1,40 @@
-# Realtime Collaborative Code Editor
+# Velora
 
-Realtime collaborative code editor with shared rooms, live syncing, Socket.io-powered collaboration, and in-browser code execution.
+<p align="center">
+  <img src="./docs/branding/velora-banner.svg" alt="Velora banner" width="100%" />
+</p>
 
-## 🚀 Live Demo
+Velora is a full-stack collaborative coding workspace with shared rooms, live synchronization, Monaco Editor, chat, session persistence, and in-browser code execution.
 
-https://code-editor-2kz5h1y4d-husan6s-projects.vercel.app
+<p align="center">
+  <strong>Realtime collaboration</strong> &bull; <strong>Shared file tabs</strong> &bull; <strong>Built-in code execution</strong>
+</p>
 
-## 🎥 Demo Video
+## Live Demo
 
-(Add Loom / screen recording link here)
+- Frontend: https://code-editor-2kz5h1y4d-husan6s-projects.vercel.app
+- Backend API: https://code-editor-fg9e.onrender.com
 
-## ✨ Highlights
+## Screenshots
 
-- Real-time collaborative editing using Socket.io
-- Multi-user room system with live presence tracking
-- Integrated Monaco Editor (VS Code-like experience)
-- Built-in code execution with error handling
-- Full-stack deployment (Vercel + Render)
-
-## 🏗️ Architecture
-
-- Frontend (React + Vite) connects to backend via WebSockets
-- Backend (Node.js + Socket.io) manages rooms and events
-- Code changes are emitted and broadcast to all users in the same room
-- State synchronization handled in real-time across clients
+<p align="center">
+  <img src="./docs/screenshots/join-room.png" alt="Join room screen" width="32%" />
+  <img src="./docs/screenshots/editor.png" alt="Editor workspace" width="32%" />
+  <img src="./docs/screenshots/sync-demo.png" alt="Realtime sync demo" width="32%" />
+</p>
 
 ## Features
 
-- Create and join collaborative rooms
-- Realtime code sync between users
-- Active user list and join/leave updates
-- Monaco editor integration
-- Basic remote cursor sharing
-- Room chat
-- Copyable room invite link
-- Run JavaScript / TypeScript snippets
-- Save and reload sessions in memory
-- Download and upload code files
-- Light and dark themes
+- Create a room instantly and share it with a copyable invite link
+- Edit code together in real time with Socket.io-powered synchronization
+- Work inside Monaco Editor with multi-file tabs and language switching
+- See active collaborators and room presence updates live
+- Use built-in room chat while coding
+- Run JavaScript and TypeScript snippets from the editor
+- Save and reload room sessions
+- Upload local files or download the current file quickly
+- Restore local room backups from `localStorage`
+- Use a polished responsive UI with dark theme support
 
 ## Tech Stack
 
@@ -48,7 +45,7 @@ https://code-editor-2kz5h1y4d-husan6s-projects.vercel.app
 - Socket.io
 - Monaco Editor
 
-## Folder Structure
+## Project Structure
 
 ```text
 code_editor/
@@ -63,6 +60,7 @@ code_editor/
 |   |-- .env.example
 |   `-- package.json
 |-- docs/
+|   |-- branding/
 |   `-- screenshots/
 |-- render.yaml
 `-- README.md
@@ -75,13 +73,11 @@ code_editor/
 ```bash
 cd client
 npm install
-cd ..
-cd server
+cd ../server
 npm install
-cd ..
 ```
 
-### 2. Start the server
+### 2. Start the backend
 
 ```bash
 cd server
@@ -92,8 +88,6 @@ The backend runs on `http://localhost:4000`.
 
 ### 3. Start the frontend
 
-In a second terminal:
-
 ```bash
 cd client
 npm run dev
@@ -101,12 +95,12 @@ npm run dev
 
 The frontend runs on `http://localhost:5173`.
 
-## Architecture Details
+## How It Works
 
-- The React client connects to the Node.js backend through Socket.io for room join, code updates, cursor sharing, and chat events.
-- The Express server keeps each room in memory with its files, connected users, and chat messages.
-- Realtime changes are emitted to the current room so other connected clients stay in sync without page refreshes.
-- REST endpoints handle health checks, code execution, room stats, and session save/load behavior.
+- The React client joins rooms and syncs events through Socket.io.
+- The Node.js and Express backend manages rooms, users, messages, and shared files in memory.
+- Editor changes, chat updates, and presence signals are broadcast to everyone in the same room.
+- REST endpoints handle execution, room stats, and save/load session flows.
 
 ## Deployment
 
@@ -114,77 +108,41 @@ The frontend runs on `http://localhost:5173`.
 
 1. Import this repository into Vercel.
 2. Set the root directory to `client`.
-3. Build command: `npm run build`
-4. Output directory: `dist`
-5. Environment variable: `VITE_BACKEND_URL=https://your-render-service.onrender.com`
+3. Use `npm run build` as the build command.
+4. Use `dist` as the output directory.
+5. Add `VITE_BACKEND_URL=https://your-render-service.onrender.com`.
 
 ### Backend on Render
 
 1. Create a new Web Service from this repository.
 2. Set the root directory to `server`.
-3. Build command: `npm install`
-4. Start command: `npm start`
-5. Environment variable: `CLIENT_ORIGIN=https://your-app.vercel.app`
+3. Use `npm install` as the build command.
+4. Use `npm start` as the start command.
+5. Add `CLIENT_ORIGIN=https://your-app.vercel.app`.
 
 The included [`render.yaml`](./render.yaml) can help bootstrap the backend service configuration.
-After deployment, verify `https://your-render-service.onrender.com/health` returns a JSON health response.
 
 ## Testing
-
-Run the backend smoke test:
 
 ```bash
 cd server
 npm test
 ```
 
-Run frontend lint:
-
 ```bash
 cd client
 npm run lint
 ```
-
-Create a production build:
 
 ```bash
 cd client
 npm run build
 ```
 
-## Screenshots
-
-### Join Room
-
-![Join room screen](./docs/screenshots/join-room.png)
-
-### Editor
-
-![Editor screen](./docs/screenshots/editor.png)
-
-### Sync Demo
-
-![Realtime sync demo](./docs/screenshots/sync-demo.png)
-
-## Demo
-
-- Live Demo: `https://code-editor-2kz5h1y4d-husan6s-projects.vercel.app`
-- Backend API: `https://code-editor-fg9e.onrender.com`
-- Demo Video / GIF: add a short Loom, LinkedIn post, or GIF here
-- Local demo: `http://localhost:5173`
-
-## Challenges Faced
-
-- Keeping realtime code updates responsive without losing the active file state between clients.
-- Tracking remote cursor presence clearly with Monaco decorations.
-- Managing room lifecycle and multi-user state with in-memory storage.
-- Balancing code execution convenience with basic sandbox safety.
-
 ## Future Improvements
 
-- Deploy client and server
-- Add persistent storage for rooms and sessions
-- Add authentication and room ownership
-- Improve editor sandboxing for code execution
-- Add richer presence indicators and typing state
-- Record and attach a short demo video
+- Add persistent database-backed room storage
+- Add authentication and room ownership controls
+- Improve code execution sandboxing
+- Add richer collaborator indicators and cursor metadata
+- Record a short product demo video or GIF for the README

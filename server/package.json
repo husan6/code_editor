@@ -1,7 +1,7 @@
 {
-  "name": "server",
+  "name": "velora-server",
   "version": "1.0.0",
-  "description": "Backend for the realtime collaborative code editor",
+  "description": "Backend service for the Velora collaborative code editor",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -9,6 +9,7 @@
     "test": "node --test server.test.js"
   },
   "keywords": [
+    "velora",
     "express",
     "socket.io",
     "collaboration",

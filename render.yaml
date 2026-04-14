@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: code-editor-server
+    name: velora-server
     env: node
     rootDir: server
     buildCommand: npm install

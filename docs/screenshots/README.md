@@ -1,6 +1,6 @@
-# Screenshots
+# Velora Screenshots
 
-Add your project screenshots in this folder and update the main `README.md` image links if the filenames change.
+Store Velora UI screenshots in this folder and update the main `README.md` image links if the filenames change.
 
 Suggested files:
 
